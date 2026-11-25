@@ -222,7 +222,9 @@ Open a Snowsight worksheet, paste [`setup/snowflake_setup.sql`](setup/snowflake_
 and choose **Run all**. It creates `LARKSPUR_ROLE`, the `LARKSPUR_WH` warehouse, the
 `LARKSPUR_LANDING`, `LARKSPUR_DEV` and `LARKSPUR_PROD` databases, and loads the eight
 source tables into `LARKSPUR_LANDING.POSTGRES_FINANCIAL_SERVICES` straight from this public
-repository. The last query should show 198,723 rows in total.
+repository. The last query should show 198,723 rows in total. A first `dbt build` of `platform` then
+runs 58 models and 144 tests; expect 8 warnings about numeric precision in contracts (a
+good first task for dbt Wizard).
 
 The tables match what the Fivetran Google Cloud PostgreSQL connector lands, including
 `_fivetran_synced` and `_fivetran_deleted`. **Using Fivetran instead?** Land the Financial
@@ -296,6 +298,12 @@ drop role if exists larkspur_role;
 | 7. Ask again | Questions 1, 8, 9 and 12 from `context/sample_questions.md` | Right number, right caveat |
 
 ---
+
+## License
+
+Code is licensed under [Apache-2.0](LICENSE). The data in `data/` keeps the terms of its
+sources (see [The data](#the-data)); `platform/.agents/skills/` holds the datavault4dbt
+agent skills from Scalefree.
 
 ## Conventions
 
