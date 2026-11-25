@@ -6,14 +6,15 @@ lending book, and a retail bank's term-deposit campaign. This lab turns the eigh
 tables into a governed dbt Mesh with a Semantic Layer and a context layer, so that an AI
 agent can answer questions about it correctly and without guessing.
 
-It adapts the [dbt_scalefree_webinar](https://github.com/hicham-bab/dbt_scalefree_webinar)
-project (AI readiness: governance, structured metadata and the Semantic Layer) from
-synthetic seed data to the **Fivetran Financial Services** industry source used by the
-dbt Hands-on Labs templates.
+This is the project from the Fivetran, dbt Labs and Snowflake webinar *Agent-Assisted Data
+Engineering*. It builds on the [dbt_scalefree_webinar](https://github.com/hicham-bab/dbt_scalefree_webinar)
+reference project (AI readiness: governance, structured metadata and the Semantic Layer),
+moved from synthetic seed data to the **Fivetran Financial Services** industry source.
 
-Stack: Fivetran (Google Cloud PostgreSQL connector) + Snowflake + dbt Fusion + the dbt platform +
-[datavault4dbt](https://github.com/ScalefreeCOM/datavault4dbt) (Scalefree), the same Data Vault 2.0
-architecture as the webinar project.
+Stack: Fivetran (Google Cloud PostgreSQL connector) + Snowflake + dbt v2 on the dbt platform +
+[datavault4dbt](https://github.com/ScalefreeCOM/datavault4dbt) (Scalefree) for the Data Vault 2.0
+layer + [dbt_semantic_view](https://github.com/Snowflake-Labs/dbt_semantic_view) (Snowflake Labs)
+for Snowflake semantic views.
 
 ---
 
@@ -55,6 +56,7 @@ Full numbers: [`context/data_caveats.md`](context/data_caveats.md).
   |     fct_risk_assessments (incremental)  fct_loans                      |
   |     fct_campaign_contacts  fct_product_recommendations  dim_date       |
   |  05_semantic_layer/ 5 semantic models, 28 metrics (8 ratios)          |
+  |  06_semantic_views/ 3 Snowflake semantic views for Cortex agents       |
   |  tests/          7 singular tests, one per verified caveat             |
   +-----------------------------------------------------------------------+
            |  ref('platform', ...)    |                       |
@@ -82,7 +84,7 @@ Full numbers: [`context/data_caveats.md`](context/data_caveats.md).
 
 ## Data Vault layer
 
-The platform follows the webinar's Scalefree layering, built with datavault4dbt (pinned in
+The platform follows the Scalefree reference project's layering, built with datavault4dbt (pinned in
 `platform/packages.yml`):
 
 | Layer | What happens | Example |
@@ -92,10 +94,11 @@ The platform follows the webinar's Scalefree layering, built with datavault4dbt 
 | `03_intermediate/` | Business rules on the current satellite rows: types, sentinels to NULL, Mon-YY dates, the century fix, soft deletes and ghost records removed | `int_loans`, `int_risk_assessments` |
 | `04_marts/core/` | The public, contract-enforced gold tables the consumers and agents use | `fct_loans`, `dim_credit_relationships` |
 | `05_semantic_layer/` | Ratio metrics over the simple metrics that sit next to each mart | `approval_rate`, `charge_off_rate` |
+| `06_semantic_views/` | Snowflake semantic views built by dbt over the core marts, with the same metric definitions | `sv_credit_risk`, `sv_lending_book`, `sv_term_deposit_campaign` |
 
 Source systems: `risk_platform` (5 tables), `lending` (`loan`), `bank_marketing`
 (`predict_term_deposit`) and `recommendations` (`fpr_records`). Personal data sits in its own
-`_p_s` satellites (`customer_name`, `customer_email`), as in the webinar's `customer_crm_p_s`.
+`_p_s` satellites (`customer_name`, `customer_email`), as in the reference project's `customer_crm_p_s`.
 The loan table's identity columns are in no hash diff and no satellite, so dbt never
 persists them. `fpr_records.customer_id` is a different id space from `customer_h`, so it
 stays a satellite attribute rather than becoming a link.
@@ -122,6 +125,23 @@ Each project owns the metrics of the models it maintains:
 The consumer ratios reproduce the platform definitions: `vintage_charge_off_rate` over all
 vintages is 14.59%, exactly the platform's `charge_off_rate`.
 
+## Snowflake semantic views
+
+`platform/models/06_semantic_views/` builds three Snowflake semantic views in the
+`semantic` schema with the `semantic_view` materialization from
+[dbt_semantic_view](https://github.com/Snowflake-Labs/dbt_semantic_view). Because dbt builds
+them, they appear in dbt lineage, reference the contract-protected marts, and carry the same
+definitions as the dbt Semantic Layer, so a Snowflake agent (Cortex Analyst, Cortex Agents,
+Cortex Code) and a dbt Semantic Layer query return the same number.
+
+```sql
+select * from semantic_view(
+    <your PROD database>.SEMANTIC.SV_CREDIT_RISK
+    dimensions institutions.region, assessments.period_number
+    metrics assessments.high_risk_rate, relationships.total_exposure_usd
+);
+```
+
 ---
 
 ## The data
@@ -138,7 +158,7 @@ vintages is 14.59%, exactly the platform's `charge_off_rate`.
 
 ---
 
-## Governance features (the webinar story)
+## Governance features
 
 - **Contracts** on all 8 public platform marts, with data types taken from the built
   tables. A type change or a dropped column fails the build before a consumer sees it.
@@ -176,6 +196,14 @@ Three layers, all in git, described in [`context/README.md`](context/README.md):
 
 ## Setup
 
+### 0. Prerequisites
+
+- A Snowflake account and a Fivetran account (a trial of either works).
+- A dbt platform account. Cross-project `ref` (dbt Mesh) needs an Enterprise or
+  Enterprise+ plan; the Semantic Layer needs Starter or above. On a smaller plan you can
+  still build and explore `platform` on its own.
+- Your own copy of this repository (fork or template), connected to the dbt platform.
+
 ### 1. Fivetran
 
 Land the Fivetran Financial Services dataset (Google Cloud PostgreSQL connector) in a
@@ -190,7 +218,8 @@ set to `platform`, `finance`, `marketing` or `data_science`.
 1. In `platform/dbt_project.yml`, set `source_schema` to your Fivetran schema.
    Sources are read from your `LANDING` database (derived from your target database by
    swapping `_DEV`/`_PROD` for `_LANDING`); override with the `source_database` var.
-2. Build the platform in development: `dbt deps`, then `dbt build` (seeds included).
+2. Build the platform in development: `dbt deps` (installs datavault4dbt and
+   dbt_semantic_view), then `dbt build` (seeds included).
 3. Create a **production** environment and job for `platform` and run it once.
    Cross-project refs resolve against the producer's production environment, so the
    consumers cannot build until this has succeeded.
@@ -232,15 +261,15 @@ project's section of the routing note.
 
 ## Conventions
 
-dbt Fusion-conformant: no `config-version`, `cast()` only (no `::`), `arguments:` on
-generic tests, `require-dbt-version: [">=1.9.0"]`. The platform uses one package,
-datavault4dbt: run `dbt deps` in `platform/` first.
+Written for dbt v2 (and compatible with dbt v1.9+): no `config-version`, `cast()` only
+(no `::`), `arguments:` on generic tests, `require-dbt-version: [">=1.9.0"]`. The platform
+uses two packages, datavault4dbt and dbt_semantic_view: run `dbt deps` in `platform/` first.
 
 ## File map
 
 ```
 platform/       producer: 01_staging, 02_raw_vault, 03_intermediate, 04_marts, 05_semantic_layer,
-                tests, seeds (dev-workflow source), .agents/skills (datavault4dbt agent skills)
+                06_semantic_views, tests, seeds (dev-workflow source), .agents/skills (datavault4dbt agent skills)
 finance/        consumer: lending and credit-risk finance marts
 marketing/      consumer: campaign and recommendation marts
 data_science/   consumer: leakage-guarded feature sets

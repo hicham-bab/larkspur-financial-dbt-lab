@@ -1,7 +1,7 @@
 # Agent instructions
 
 For any AI agent answering questions over this project (dbt MCP server, dbt Wizard,
-Snowflake Cortex, Databricks Genie, a Claude or GPT agent reading the Fivetran
+Snowflake Cortex Agents or Cortex Analyst over the semantic views, Databricks Genie, a Claude or GPT agent reading the Fivetran
 Context Layer). Read `data_caveats.md` once; these rules are the short version.
 
 ## Route the question
