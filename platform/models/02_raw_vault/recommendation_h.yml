@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: recommendation_h
+    description: "Standard hub: Product recommendations"
+    config:
+      tags: ['hub', 'raw_vault']
+    columns:
+      - name: hk_recommendation_h
+        description: "Hash key for recommendation_h"
+        data_tests:
+          - unique
+          - not_null
+      - name: recommendation_id
+        description: "Business key column"
+        data_tests:
+          - not_null
+      - name: ldts
+        description: "Load date timestamp"
+      - name: rsrc
+        description: "Record source"

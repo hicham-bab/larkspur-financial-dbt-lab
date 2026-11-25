@@ -1,0 +1,5 @@
+# dbt Mesh: read the platform project's PUBLIC models with {{ ref('platform', '<model>') }}.
+# In the dbt platform, the platform project must have a production deployment
+# environment with at least one successful run before this project can resolve them.
+projects:
+  - name: platform

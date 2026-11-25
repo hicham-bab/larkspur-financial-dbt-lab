@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: loan_default_features
+    description: "PD model training set: matured loans only, origination-time features only, label = label_charged_off (14.6% positive)."
+    config:
+      meta: {owner: data-science-team, domain: lending, tier: silver, pii_contains: false, leakage_guard: "post-origination columns excluded"}
+    columns:
+      - name: loan_id
+        data_tests: [unique, not_null]
+      - name: label_charged_off
+        data_tests: [not_null]
+
+  - name: term_deposit_propensity_features
+    description: "Propensity model training set. call_duration_seconds excluded on purpose (target leakage). label = label_subscribed (11.7% positive)."
+    config:
+      meta: {owner: data-science-team, domain: marketing, tier: silver, pii_contains: false, leakage_guard: "call duration excluded"}
+    columns:
+      - name: contact_id
+        data_tests: [unique, not_null]
+
+  - name: relationship_risk_trajectory_features
+    description: "Per-relationship risk trajectory over the 36 periods: slope, volatility, high-risk / denied / anomaly / fraud-alert period counts."
+    config:
+      meta: {owner: data-science-team, domain: credit_risk, tier: silver, pii_contains: false}
+    columns:
+      - name: relationship_id
+        data_tests: [unique, not_null]

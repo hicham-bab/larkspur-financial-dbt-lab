@@ -1,0 +1,5 @@
+packages:
+  - git: "https://github.com/ScalefreeCOM/datavault4dbt.git"
+    revision: "v2.1.2"
+  - package: Snowflake-Labs/dbt_semantic_view
+    version: [">=1.0.6", "<2.0.0"]

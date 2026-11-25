@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_relationship_performance
+    description: "Relationship performance summary over the 36 periods, from the customer_institution_l satellite."
+    config:
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: false
+    columns:
+      - name: performance_id
+        data_tests:
+          - unique
+          - not_null

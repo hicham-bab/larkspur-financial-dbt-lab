@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: assessment_customer_institution_nl
+    description: "Non-historized link: one risk assessment event for a customer at an institution"
+    config:
+      tags: ['non_historized_link', 'raw_vault']
+    columns:
+      - name: hk_assessment_customer_institution_nl
+        description: "Hash key for assessment_customer_institution_nl"
+        data_tests:
+          - unique
+          - not_null
+      - name: hk_assessment_h
+        description: "Foreign hash key"
+        data_tests:
+          - not_null
+      - name: hk_customer_h
+        description: "Foreign hash key"
+        data_tests:
+          - not_null
+      - name: hk_institution_h
+        description: "Foreign hash key"
+        data_tests:
+          - not_null
+      - name: ldts
+        description: "Load date timestamp"
+      - name: rsrc
+        description: "Record source"

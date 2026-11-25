@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: int_assessment_periods
+    description: "One row per assessment period: period_number 1..36, 30 days apart. The honest time axis for risk trends."
+    config:
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: false
+    columns:
+      - name: assessment_date
+        data_tests:
+          - unique
+          - not_null
+      - name: period_number
+        data_tests:
+          - unique
+          - not_null

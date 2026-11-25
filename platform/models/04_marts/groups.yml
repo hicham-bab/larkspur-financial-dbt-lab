@@ -1,0 +1,15 @@
+groups:
+  - name: credit_risk
+    owner:
+      name: Credit Risk Platform Team
+      email: credit-risk-platform@larkspur-financial.example
+
+  - name: lending
+    owner:
+      name: Lending Data Team
+      email: lending-data@larkspur-financial.example
+
+  - name: marketing
+    owner:
+      name: Marketing Data Team
+      email: marketing-data@larkspur-financial.example

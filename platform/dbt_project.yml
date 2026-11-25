@@ -1,0 +1,49 @@
+name: 'platform'
+version: '1.0.0'
+require-dbt-version: [">=1.9.0"]
+profile: 'default'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  # The Snowflake schema your Fivetran connector landed the Financial Services tables in.
+  # Fivetran names it <destination schema prefix>_<source schema>, e.g. JANE_DOE_POSTGRES_FINANCIAL_SERVICES.
+  # Set this to YOUR schema before running dbt.
+  source_schema: 'YOUR_PREFIX_POSTGRES_FINANCIAL_SERVICES'
+  # source_database defaults to your LANDING database (your dev/prod target database with
+  # _DEV/_PROD swapped for _LANDING). Uncomment to override:
+  # source_database: 'YOUR_LANDING_DATABASE'
+
+models:
+  platform:
+    01_staging:
+      +materialized: view
+      +schema: staging
+      +meta:
+        tier: bronze
+    02_raw_vault:
+      +schema: raw_vault
+      +meta:
+        tier: silver
+    03_intermediate:
+      +materialized: view
+      +schema: intermediate
+      +meta:
+        tier: silver
+    04_marts:
+      core:
+        +materialized: table
+        +schema: core
+        +meta:
+          tier: gold
+
+seeds:
+  platform:
+    +schema: seeds
+    +quote_columns: false

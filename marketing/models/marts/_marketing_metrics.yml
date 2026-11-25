@@ -1,0 +1,9 @@
+# Ratio metrics owned by marketing, built on marketing's own simple metrics.
+
+metrics:
+  - name: recommendation_acceptance_rate
+    description: "Accepted / all recommendations. Overall 17.2% (129 of 751)."
+    type: ratio
+    numerator: recommendations_accepted
+    denominator: recommendations_made
+    label: "Recommendation Acceptance Rate"

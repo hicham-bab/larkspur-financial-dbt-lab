@@ -1,0 +1,11 @@
+# Ratio metrics owned by finance. They divide finance's own simple metrics in
+# _finance_models.yml, so they reproduce the platform's charge_off_rate and
+# net_loss_rate definitions (matured loans in the denominator) per vintage.
+
+metrics:
+  - name: vintage_charge_off_rate
+    description: "Charged-off / matured loans of the vintage. Matches the platform's charge_off_rate: current loans are excluded from the denominator."
+    type: ratio
+    numerator: vintage_charged_off_loans
+    denominator: vintage_matured_loans
+    label: "Vintage Charge-Off Rate"

@@ -1,0 +1,76 @@
+version: 2
+
+seeds:
+  - name: raw_customer_complaints
+    description: >
+      Raw customer complaints from the member institutions' complaints-handling system. One row
+      per complaint. Synthetic, but every complaint points at a real customer x institution
+      relationship of the risk platform, and its product_type matches that relationship.
+      Deliberately NOT modeled yet: it is the source for the live development workflow (add it
+      to the raw vault with dbt Wizard and the datavault4dbt agent skills in .agents/skills).
+    config:
+      column_types:
+        complaint_id: varchar(16)
+        customer_id: varchar(16)
+        institution_id: varchar(16)
+        product_type: varchar(50)
+        complaint_category: varchar(50)
+        complaint_text: varchar(500)
+        channel: varchar(30)
+        severity: varchar(10)
+        received_date: date
+        resolved_date: date
+        resolution_status: varchar(30)
+        compensation_amount_usd: number(12,2)
+        _loaded_at: timestamp_ntz
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: false
+        freshness_sla: daily
+    columns:
+      - name: complaint_id
+        description: "Unique complaint identifier. Format: CMP-00001."
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: "Risk platform customer who complained (same id space as customer_h, CUST-0001)."
+        data_tests:
+          - not_null
+      - name: institution_id
+        description: "Member institution the complaint is about (same id space as institution_h, FI-0001)."
+        data_tests:
+          - not_null
+      - name: product_type
+        description: "Product the complaint concerns; always the product of that customer x institution relationship."
+      - name: complaint_category
+        description: "Category assigned by the complaints team, specific to the product."
+      - name: complaint_text
+        description: "Short summary of the complaint as recorded by the handler."
+      - name: channel
+        description: "phone, web_form, branch, email or regulator_referral."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['phone', 'web_form', 'branch', 'email', 'regulator_referral']
+      - name: severity
+        description: "low, medium or high."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['low', 'medium', 'high']
+      - name: received_date
+        description: "Date the complaint was received, within the assessment window 2022-01-01 to 2024-11-16."
+      - name: resolved_date
+        description: "Date the complaint was closed. Empty while it is open or escalated."
+      - name: resolution_status
+        description: "resolved_upheld, resolved_not_upheld, open or escalated."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['resolved_upheld', 'resolved_not_upheld', 'open', 'escalated']
+      - name: compensation_amount_usd
+        description: "Compensation paid. Non-zero only for upheld complaints."
+      - name: _loaded_at
+        description: "Timestamp when this record was loaded into the raw layer."

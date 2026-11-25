@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_relationships_joined
+    description: "One row per customer x institution relationship: risk profile joined to performance metrics."
+    config:
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: false
+    columns:
+      - name: relationship_id
+        data_tests:
+          - unique
+          - not_null

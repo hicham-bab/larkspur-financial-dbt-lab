@@ -1,0 +1,251 @@
+version: 2
+
+models:
+  - name: fct_loans
+    description: 'One row per consumer installment loan (39,717), issued 2007-06 to 2011-12 and observed in May
+      2016. Identity columns from the source never reach this model. A separate business from the risk platform:
+      no customer key joins the two.'
+    config:
+      access: public
+      group: lending
+      contract:
+        enforced: true
+      meta:
+        owner: lending-data-team
+        domain: lending
+        tier: gold
+        pii_contains: false
+        freshness_sla: static
+        semantic_layer_enabled: true
+    semantic_model:
+      enabled: true
+    agg_time_dimension: issue_date
+    columns:
+      - name: loan_id
+        data_type: number
+        description: Primary key.
+        entity:
+          type: primary
+          name: loan
+        data_tests:
+          - unique
+          - not_null
+      - name: issue_date
+        data_type: date
+        description: Month the loan was issued (first of month).
+        granularity: day
+        dimension:
+          type: time
+        data_tests:
+          - not_null
+      - name: issue_year
+        data_type: number
+        description: Issue year, the loan's vintage.
+        dimension:
+          type: categorical
+      - name: term_months
+        data_type: number
+        description: 36 or 60.
+        dimension:
+          type: categorical
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - 36
+                  - 60
+      - name: grade
+        data_type: varchar
+        description: Lender credit grade A (best) to G.
+        dimension:
+          type: categorical
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - A
+                  - B
+                  - C
+                  - D
+                  - E
+                  - F
+                  - G
+      - name: sub_grade
+        data_type: varchar
+        description: Sub-grade A1 to G5.
+        dimension:
+          type: categorical
+      - name: purpose
+        data_type: varchar
+        description: Stated loan purpose.
+        dimension:
+          type: categorical
+      - name: home_ownership
+        data_type: varchar
+        description: RENT, MORTGAGE, OWN, OTHER or NONE.
+        dimension:
+          type: categorical
+      - name: verification_status
+        data_type: varchar
+        description: Income verification status.
+        dimension:
+          type: categorical
+      - name: emp_length
+        data_type: varchar
+        description: Employment length band.
+        dimension:
+          type: categorical
+      - name: addr_state
+        data_type: varchar
+        description: Borrower state (US).
+        dimension:
+          type: categorical
+      - name: annual_income
+        data_type: number(14,2)
+        description: Borrower annual income at application, USD.
+      - name: debt_to_income_ratio
+        data_type: number(6,2)
+        description: Debt to income at application, percent (e.g. 13.5).
+      - name: interest_rate_pct
+        data_type: number(6,2)
+        description: Interest rate, percent.
+      - name: loan_amount
+        data_type: number(12,2)
+        description: Amount applied for, USD.
+      - name: funded_amount
+        data_type: number(12,2)
+        description: Amount funded, USD.
+      - name: installment
+        data_type: number(10,2)
+        description: Monthly installment, USD.
+      - name: loan_status
+        data_type: varchar
+        description: Fully Paid, Charged Off or Current.
+        dimension:
+          type: categorical
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - Fully Paid
+                  - Charged Off
+                  - Current
+      - name: is_matured
+        data_type: boolean
+        description: True for Fully Paid or Charged Off. Only matured loans belong in a charge-off rate denominator.
+        dimension:
+          type: categorical
+      - name: is_charged_off
+        data_type: boolean
+        description: True when loan_status is Charged Off.
+        dimension:
+          type: categorical
+      - name: earliest_credit_line_date
+        data_type: date
+        description: First credit line, corrected for the two-digit-year century bug (Nov-69 is 1969, not 2069).
+      - name: credit_history_years_at_issue
+        data_type: number(5,1)
+        description: Years of credit history when the loan was issued.
+      - name: delinquencies_2yrs
+        data_type: number
+        description: Delinquencies in the 2 years before application.
+      - name: inquiries_last_6mths
+        data_type: number
+        description: Credit inquiries in the 6 months before application.
+      - name: open_accounts
+        data_type: number
+        description: Open credit lines at application.
+      - name: public_records
+        data_type: number
+        description: Derogatory public records at application.
+      - name: public_record_bankruptcies
+        data_type: number
+        description: Public record bankruptcies. NULL where the source said 'NA'.
+      - name: revolving_balance
+        data_type: number(14,2)
+        description: Revolving balance at application, USD.
+      - name: revolving_utilization_pct
+        data_type: number(6,2)
+        description: Revolving utilization at application, percent.
+      - name: total_accounts
+        data_type: number
+        description: Total credit lines ever.
+      - name: outstanding_principal
+        data_type: number(12,2)
+        description: Principal still outstanding in May 2016.
+      - name: total_payment
+        data_type: number(14,2)
+        description: 'Total paid by the borrower to date, USD. Post-origination: never a model feature.'
+      - name: total_received_principal
+        data_type: number(14,2)
+        description: Principal repaid to date, USD.
+      - name: total_received_interest
+        data_type: number(14,2)
+        description: Interest received to date, USD.
+      - name: total_received_late_fees
+        data_type: number(12,2)
+        description: Late fees received, USD.
+      - name: recoveries
+        data_type: number(12,2)
+        description: Post charge-off gross recoveries, USD.
+      - name: collection_recovery_fee
+        data_type: number(12,2)
+        description: Collection fee on recoveries, USD.
+      - name: net_principal_loss
+        data_type: number(14,2)
+        description: 'For charged-off loans: funded amount minus principal repaid minus net recoveries. 0 otherwise.'
+      - name: last_payment_date
+        data_type: date
+        description: Month of the last payment received.
+    metrics:
+      - name: loan_count
+        description: Number of loans issued.
+        type: simple
+        agg: count
+        expr: loan_id
+        label: Loans
+        fill_nulls_with: 0
+      - name: total_funded_amount
+        description: Total amount funded, USD.
+        type: simple
+        agg: sum
+        expr: funded_amount
+        label: Funded Amount (USD)
+        fill_nulls_with: 0
+      - name: matured_loans
+        description: Loans with a final outcome (Fully Paid or Charged Off).
+        type: simple
+        agg: count
+        expr: loan_id
+        label: Matured Loans
+        fill_nulls_with: 0
+        filter: '{{ Dimension(''loan__is_matured'') }} = true'
+      - name: charged_off_loans
+        description: Loans charged off.
+        type: simple
+        agg: count
+        expr: loan_id
+        label: Charged-Off Loans
+        fill_nulls_with: 0
+        filter: '{{ Dimension(''loan__is_charged_off'') }} = true'
+      - name: matured_funded_amount
+        description: Funded amount of matured loans, USD. Denominator of net_loss_rate.
+        type: simple
+        agg: sum
+        expr: funded_amount
+        label: Matured Funded Amount (USD)
+        fill_nulls_with: 0
+        filter: '{{ Dimension(''loan__is_matured'') }} = true'
+      - name: total_net_principal_loss
+        description: Net principal lost on charged-off loans after recoveries, USD.
+        type: simple
+        agg: sum
+        expr: net_principal_loss
+        label: Net Principal Loss (USD)
+        fill_nulls_with: 0
+      - name: avg_interest_rate
+        description: Average interest rate, percent (unweighted).
+        type: simple
+        agg: average
+        expr: interest_rate_pct
+        label: Avg Interest Rate (%)

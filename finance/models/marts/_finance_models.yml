@@ -1,0 +1,123 @@
+version: 2
+
+models:
+  - name: fct_loan_vintage_performance
+    description: "Lending book by issue year x grade (2007-2011 vintages, observed May 2016). Charge-off and net loss rates use MATURED loans as the denominator."
+    config:
+      meta: {owner: finance-team, domain: lending, tier: gold, pii_contains: false}
+    semantic_model:
+      enabled: true
+    agg_time_dimension: vintage_start_date
+    primary_entity: loan_vintage
+    columns:
+      - name: issue_year
+        description: "Loan vintage."
+        data_tests: [not_null]
+      - name: vintage_start_date
+        description: "First day of the vintage year. Query it at year grain."
+        granularity: year
+        dimension:
+          type: time
+        data_tests: [not_null]
+      - name: grade
+        description: "Lender credit grade A to G."
+        dimension:
+          type: categorical
+        data_tests: [not_null]
+      - name: charge_off_rate
+        description: "Charged-off / matured loans. Same definition as the charge_off_rate Semantic Layer metric."
+      - name: net_loss_rate
+        description: "Net principal loss / funded amount of matured loans."
+    metrics:
+      - name: vintage_funded_amount
+        description: "Funded amount written in the vintage, USD."
+        type: simple
+        agg: sum
+        expr: funded_amount
+        fill_nulls_with: 0
+        label: "Vintage Funded Amount (USD)"
+      - name: vintage_matured_loans
+        description: "Loans of the vintage with a final outcome (Fully Paid or Charged Off)."
+        type: simple
+        agg: sum
+        expr: matured_loans
+        fill_nulls_with: 0
+        label: "Vintage Matured Loans"
+      - name: vintage_charged_off_loans
+        description: "Loans of the vintage charged off."
+        type: simple
+        agg: sum
+        expr: charged_off_loans
+        fill_nulls_with: 0
+        label: "Vintage Charged-Off Loans"
+      - name: vintage_net_principal_loss
+        description: "Net principal lost on the vintage after recoveries, USD."
+        type: simple
+        agg: sum
+        expr: net_principal_loss
+        fill_nulls_with: 0
+        label: "Vintage Net Principal Loss (USD)"
+
+  - name: institution_exposure_summary
+    description: "Exposure per member institution x product, with the share in relationships that are High or Very High risk at the latest assessment (2024-11-16)."
+    config:
+      meta: {owner: finance-team, domain: credit_risk, tier: gold, pii_contains: false}
+    columns:
+      - name: institution_id
+        data_tests: [not_null]
+      - name: total_exposure
+        description: "USD, point in time. Sums across institutions and products; never across dates."
+      - name: exposure_weighted_risk_adjusted_return
+        description: "Risk-adjusted return weighted by exposure."
+
+  - name: risk_trend_by_period
+    description: "Risk book per assessment period (1..36, 30 days apart). Periods are not calendar months."
+    config:
+      meta: {owner: finance-team, domain: credit_risk, tier: gold, pii_contains: false}
+    semantic_model:
+      enabled: true
+    agg_time_dimension: assessment_date
+    columns:
+      - name: period_number
+        description: "Assessment period 1..36. The honest time axis: group by this, not by calendar month."
+        entity:
+          type: primary
+          name: assessment_period
+        dimension:
+          type: categorical
+        data_tests: [unique, not_null]
+      - name: assessment_date
+        description: "Date of the assessment period. Query it at day grain: month grain double-counts January and May 2022 and skips February 2022."
+        granularity: day
+        dimension:
+          type: time
+        data_tests: [unique, not_null]
+      - name: approval_rate
+        description: "'Approve' + 'Approve with Conditions' share (source definition)."
+    metrics:
+      - name: period_assessments
+        description: "Risk assessments in the period (2,948 per period)."
+        type: simple
+        agg: sum
+        expr: assessments
+        fill_nulls_with: 0
+        label: "Assessments per Period"
+      - name: period_fraud_alerts
+        description: "Fraud Alert anomalies in the period."
+        type: simple
+        agg: sum
+        expr: fraud_alerts
+        fill_nulls_with: 0
+        label: "Fraud Alerts per Period"
+      - name: period_transaction_volume
+        description: "Transaction volume assessed in the period, USD."
+        type: simple
+        agg: sum
+        expr: transaction_volume
+        fill_nulls_with: 0
+        label: "Transaction Volume per Period (USD)"
+
+  - name: portfolio_concentration
+    description: "Share of total exposure by customer segment x product."
+    config:
+      meta: {owner: finance-team, domain: credit_risk, tier: gold, pii_contains: false}

@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: Calendar spine from 2007-01-01 to 2026-12-31. Time spine for the Semantic Layer.
+    config:
+      access: public
+      group: credit_risk
+      contract:
+        enforced: true
+      meta:
+        owner: credit-risk-platform-team
+        domain: time
+        tier: gold
+        pii_contains: false
+        freshness_sla: static
+        semantic_layer_enabled: false
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        data_type: date
+        description: Calendar date. Primary key.
+        granularity: day
+        data_tests:
+          - unique
+          - not_null
+      - name: year_number
+        data_type: number
+        description: Calendar year.
+      - name: quarter_number
+        data_type: number
+        description: Calendar quarter, 1 to 4.
+      - name: month_number
+        data_type: number
+        description: Calendar month, 1 to 12.
+      - name: month_start_date
+        data_type: date
+        description: First day of the month.
+      - name: iso_day_of_week
+        data_type: number
+        description: ISO day of week, 1 (Monday) to 7.
+      - name: is_weekend
+        data_type: boolean
+        description: True on Saturday and Sunday.

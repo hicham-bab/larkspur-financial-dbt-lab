@@ -1,0 +1,66 @@
+# Ratio metrics. The simple metrics they divide live next to their models in
+# marts/core/_core_models.yml. Each definition here is the governed answer: an
+# agent or dashboard that computes the same idea any other way is off-definition.
+
+metrics:
+  - name: high_risk_rate
+    description: "Share of assessments with risk level High or Very High."
+    type: ratio
+    numerator: high_risk_assessments
+    denominator: assessment_count
+    label: "High-Risk Rate"
+
+  - name: approval_rate
+    description: >
+      Share of assessments recommended 'Approve' or 'Approve with Conditions'. This is the
+      source system's definition (it matches risk_assess_performance_metrics.approval_percentage).
+      'Approve with Strict Conditions' does NOT count. For the broader reading use any_approval_rate.
+    type: ratio
+    numerator: approved_assessments
+    denominator: assessment_count
+    label: "Approval Rate"
+
+  - name: any_approval_rate
+    description: "Share of assessments with any 'Approve...' recommendation, including strict conditions. Always roughly 13 points above approval_rate."
+    type: ratio
+    numerator: any_approval_assessments
+    denominator: assessment_count
+    label: "Any-Approval Rate"
+
+  - name: denial_rate
+    description: "Share of assessments recommended Deny."
+    type: ratio
+    numerator: denied_assessments
+    denominator: assessment_count
+    label: "Denial Rate"
+
+  - name: anomaly_rate
+    description: "Share of assessments flagged as anomalies."
+    type: ratio
+    numerator: anomaly_assessments
+    denominator: assessment_count
+    label: "Anomaly Rate"
+
+  - name: high_risk_exposure_share
+    description: "Share of total exposure sitting in relationships whose latest risk level is High or Very High."
+    type: ratio
+    numerator: high_risk_exposure
+    denominator: total_exposure
+    label: "High-Risk Exposure Share"
+
+  - name: charge_off_rate
+    description: >
+      Charged-off loans divided by MATURED loans (Fully Paid + Charged Off). Current loans are
+      excluded from the denominator because their outcome is not known yet; dividing by all
+      loans understates the rate.
+    type: ratio
+    numerator: charged_off_loans
+    denominator: matured_loans
+    label: "Charge-Off Rate"
+
+  - name: net_loss_rate
+    description: "Net principal loss after recoveries divided by the funded amount of matured loans."
+    type: ratio
+    numerator: total_net_principal_loss
+    denominator: matured_funded_amount
+    label: "Net Loss Rate"

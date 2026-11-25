@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_risk_profiles
+    description: "Relationship risk profiles from the customer_institution_l satellite. Empty strings in not-applicable measures become NULL."
+    config:
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: false
+    columns:
+      - name: risk_profile_id
+        data_tests:
+          - unique
+          - not_null

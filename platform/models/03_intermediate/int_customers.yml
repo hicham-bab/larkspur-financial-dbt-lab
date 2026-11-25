@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: int_customers
+    description: "Risk platform customers rebuilt from customer_h and its satellites. Booleans parsed from 'True'/'False' strings; showcase personas flagged."
+    config:
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: true
+        pii_columns: [customer_name]
+    columns:
+      - name: customer_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        config:
+          meta:
+            pii: true

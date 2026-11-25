@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_relationship_latest_assessment
+    description: "The most recent assessment of each relationship."
+    config:
+      meta:
+        owner: credit-risk-platform-team
+        domain: credit_risk
+        pii_contains: false
+    columns:
+      - name: relationship_id
+        data_tests:
+          - unique
+          - not_null

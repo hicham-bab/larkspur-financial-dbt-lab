@@ -1,0 +1,89 @@
+version: 2
+
+models:
+  - name: campaign_conversion_by_segment
+    description: "Term-deposit conversion by segment, long format: filter segment_type first (age_band, job, education, contact_channel, previous_campaign_outcome). Overall conversion is 11.7%. No time axis exists."
+    config:
+      meta: {owner: marketing-team, domain: marketing, tier: gold, pii_contains: false}
+    columns:
+      - name: segment_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['age_band', 'job', 'education', 'contact_channel', 'previous_campaign_outcome']
+      - name: segment_value
+        data_tests: [not_null]
+      - name: lift_vs_overall
+        description: "Segment conversion / overall conversion. 2.0 means twice as likely to subscribe."
+
+  - name: campaign_contact_effort
+    description: "Conversion by number of contact attempts in the campaign (1..9, 10+)."
+    config:
+      meta: {owner: marketing-team, domain: marketing, tier: gold, pii_contains: false}
+    columns:
+      - name: contact_attempts
+        data_tests: [unique, not_null]
+
+  - name: recommendation_funnel
+    description: "Product recommendation status counts per recommended product (April 2024 to May 2025)."
+    config:
+      meta: {owner: marketing-team, domain: marketing, tier: gold, pii_contains: false}
+    columns:
+      - name: recommended_product
+        data_tests: [unique, not_null]
+
+  - name: customer_risk_segments
+    description: "Risk platform customers by segment x credit score band. Aggregates only; no names."
+    config:
+      meta: {owner: marketing-team, domain: credit_risk, tier: gold, pii_contains: false}
+
+  - name: recommendation_activity_daily
+    description: "Product recommendations per day x recommended product (2024-04-28 to 2025-05-17). Carries marketing's own Semantic Layer metrics."
+    config:
+      meta: {owner: marketing-team, domain: marketing, tier: gold, pii_contains: false}
+    semantic_model:
+      enabled: true
+    agg_time_dimension: recommendation_date
+    primary_entity: recommendation_day
+    columns:
+      - name: recommendation_date
+        description: "Date the recommendation was made."
+        granularity: day
+        dimension:
+          type: time
+        data_tests: [not_null]
+      - name: recommended_product
+        description: "Product that was recommended."
+        dimension:
+          type: categorical
+        data_tests: [not_null]
+      - name: recommendations
+        description: "Recommendations made."
+      - name: accepted_recommendations
+        description: "Recommendations with status Accepted."
+      - name: lost_recommendations
+        description: "Recommendations Declined or Rejected."
+    metrics:
+      - name: recommendations_made
+        description: "Product recommendations made."
+        type: simple
+        agg: sum
+        expr: recommendations
+        fill_nulls_with: 0
+        label: "Recommendations Made"
+      - name: recommendations_accepted
+        description: "Product recommendations accepted by the customer."
+        type: simple
+        agg: sum
+        expr: accepted_recommendations
+        fill_nulls_with: 0
+        label: "Recommendations Accepted"
+      - name: recommendations_lost
+        description: "Product recommendations declined or rejected."
+        type: simple
+        agg: sum
+        expr: lost_recommendations
+        fill_nulls_with: 0
+        label: "Recommendations Lost"
+

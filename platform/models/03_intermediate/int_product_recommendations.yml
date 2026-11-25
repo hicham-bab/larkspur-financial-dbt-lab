@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: int_product_recommendations
+    description: "Product recommendation log; placeholder text columns were never loaded into the vault."
+    config:
+      meta:
+        owner: marketing-data-team
+        domain: marketing
+        pii_contains: true
+        pii_columns: [customer_name, customer_email]
+    columns:
+      - name: recommendation_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_name
+        config:
+          meta:
+            pii: true
+      - name: customer_email
+        config:
+          meta:
+            pii: true

@@ -1,0 +1,145 @@
+version: 2
+
+sources:
+  - name: financial_services
+    description: >
+      Financial Services dataset replicated by your Fivetran connector (Google Cloud
+      PostgreSQL source). Eight tables from three unrelated business domains: a shared
+      credit-risk assessment platform (risk_assess_*), a consumer lending book (loan),
+      and a retail bank's term-deposit marketing campaign (predict_term_deposit), plus
+      a product recommendation log (fpr_records).
+    database: "{{ var('source_database', (target.database[:-4] ~ '_LANDING') if target.database.upper().endswith('_DEV') else ((target.database[:-5] ~ '_LANDING') if target.database.upper().endswith('_PROD') else target.database)) }}"
+    schema: "{{ var('source_schema', 'financial_services') }}"
+    config:
+      loaded_at_field: _fivetran_synced
+      meta:
+        owner: data-platform-team
+        tier: bronze
+        loaded_by: fivetran
+    tables:
+      - name: risk_assess_customers
+        description: "Borrowers known to the risk platform. One row per customer_id. Five showcase personas have ids CUST-C001..CUST-C005."
+        config:
+          meta:
+            domain: credit_risk
+            pii_contains: true
+            pii_columns: ["customer_name"]
+        columns:
+          - name: customer_id
+            data_tests:
+              - unique
+              - not_null
+
+      - name: risk_assess_financial_institutions
+        description: "The 20 member institutions that use the risk platform. Five showcase institutions have ids FI-C001..FI-C005."
+        config:
+          meta:
+            domain: credit_risk
+            pii_contains: false
+        columns:
+          - name: institution_id
+            data_tests:
+              - unique
+              - not_null
+
+      - name: risk_assess_monthly_assessments
+        description: >
+          One risk assessment per customer, institution and assessment period. 36 periods,
+          spaced 30 days apart from 2022-01-01 to 2024-11-16. They are NOT calendar months:
+          January and May 2022 hold two periods each and February 2022 holds none.
+        config:
+          meta:
+            domain: credit_risk
+            pii_contains: false
+        columns:
+          - name: assessment_id
+            data_tests:
+              - unique
+              - not_null
+
+      - name: risk_assess_risk_profiles
+        description: "One risk profile per customer and institution relationship (2,948 rows). Each relationship holds exactly one product."
+        config:
+          meta:
+            domain: credit_risk
+            pii_contains: false
+        columns:
+          - name: risk_profile_id
+            data_tests:
+              - unique
+              - not_null
+
+      - name: risk_assess_performance_metrics
+        description: "Precomputed performance summary per customer and institution relationship over all 36 periods (2,948 rows)."
+        config:
+          meta:
+            domain: credit_risk
+            pii_contains: false
+        columns:
+          - name: performance_id
+            data_tests:
+              - unique
+              - not_null
+
+      - name: loan
+        description: >
+          Consumer installment loans issued June 2007 to December 2011, observed as of May 2016
+          (public Lending Club data). One row per loan. Unrelated to the risk platform customers.
+          Carries identity columns (ssn, social_security_number, ssnumber, ssnumber1, dl,
+          drivers_license) that are excluded in staging and never reach a gold model.
+        config:
+          meta:
+            domain: lending
+            pii_contains: true
+            pii_columns: ["ssn", "social_security_number", "ssnumber", "ssnumber1", "dl", "drivers_license", "emp_title", "c_url", "c_desc"]
+        columns:
+          - name: id
+            data_tests:
+              - unique
+              - not_null
+          - name: ssn
+            config:
+              meta:
+                pii: true
+                pii_class: national_id
+          - name: social_security_number
+            config:
+              meta:
+                pii: true
+                pii_class: national_id
+          - name: drivers_license
+            config:
+              meta:
+                pii: true
+                pii_class: government_id
+
+      - name: predict_term_deposit
+        description: >
+          Outbound telemarketing contacts for a term-deposit product (public UCI Bank
+          Marketing data). One row per contacted client. The contact month is recorded
+          without a year, so this table cannot be trended over time.
+        config:
+          meta:
+            domain: marketing
+            pii_contains: false
+        columns:
+          - name: id
+            data_tests:
+              - unique
+              - not_null
+
+      - name: fpr_records
+        description: >
+          Product recommendation log, one row per customer (751 rows, April 2024 to May 2025).
+          Its customer ids (CUST_000000 format) do NOT match the risk platform's customers.
+          Several text columns hold placeholders such as "Product Usage 42" and are dropped.
+        config:
+          meta:
+            domain: marketing
+            pii_contains: true
+            pii_columns: ["customer_name", "customer_email"]
+        columns:
+          - name: record_id
+            data_tests:
+              - unique
+              - not_null
