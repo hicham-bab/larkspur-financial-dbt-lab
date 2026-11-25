@@ -132,7 +132,7 @@ vintages is 14.59%, exactly the platform's `charge_off_rate`.
 [dbt_semantic_view](https://github.com/Snowflake-Labs/dbt_semantic_view). Because dbt builds
 them, they appear in dbt lineage, reference the contract-protected marts, and carry the same
 definitions as the dbt Semantic Layer, so a Snowflake agent (Cortex Analyst, Cortex Agents,
-Cortex Code) and a dbt Semantic Layer query return the same number.
+Snowflake CoWork or Snowflake CoCo) and a dbt Semantic Layer query return the same number.
 
 ```sql
 select * from semantic_view(

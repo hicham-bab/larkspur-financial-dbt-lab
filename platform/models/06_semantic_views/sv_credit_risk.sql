@@ -1,6 +1,6 @@
 {{ config(materialized='semantic_view', schema='semantic', static_analysis='off') }}
 -- Snowflake semantic view over the credit-risk platform marts, for Cortex Analyst,
--- Snowflake Intelligence and Cortex Code. Metrics mirror the dbt Semantic Layer
+-- Snowflake CoWork and Snowflake CoCo. Metrics mirror the dbt Semantic Layer
 -- definitions (approval_rate, high_risk_rate, high_risk_exposure_share...) so a
 -- Snowflake agent and a dbt Semantic Layer query return the same number.
 
