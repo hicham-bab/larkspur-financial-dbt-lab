@@ -12,10 +12,11 @@ clean-targets:
   - "dbt_packages"
 
 vars:
-  # The Snowflake schema your Fivetran connector landed the Financial Services tables in.
-  # Fivetran names it <destination schema prefix>_<source schema>, e.g. JANE_DOE_POSTGRES_FINANCIAL_SERVICES.
-  # Set this to YOUR schema before running dbt.
-  source_schema: 'YOUR_PREFIX_POSTGRES_FINANCIAL_SERVICES'
+  # The Snowflake schema that holds the 8 Financial Services source tables.
+  # setup/snowflake_setup.sql creates POSTGRES_FINANCIAL_SERVICES, so the default works as is.
+  # If your own Fivetran connector landed the data, use its schema instead
+  # (Fivetran names it <destination schema prefix>_<source schema>, e.g. JANE_DOE_POSTGRES_FINANCIAL_SERVICES).
+  source_schema: 'POSTGRES_FINANCIAL_SERVICES'
   # source_database defaults to your LANDING database (your dev/prod target database with
   # _DEV/_PROD swapped for _LANDING). Uncomment to override:
   # source_database: 'YOUR_LANDING_DATABASE'
