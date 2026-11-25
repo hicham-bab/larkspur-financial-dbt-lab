@@ -16,6 +16,10 @@ Stack: Fivetran (Google Cloud PostgreSQL connector) + Snowflake + dbt v2 on the 
 layer + [dbt_semantic_view](https://github.com/Snowflake-Labs/dbt_semantic_view) (Snowflake Labs)
 for Snowflake semantic views.
 
+**Quickstart:** run [`setup/snowflake_setup.sql`](setup/snowflake_setup.sql) in a Snowsight
+worksheet to load the data, then connect your copy of this repo to the dbt platform and
+build `platform`. Details in [Setup](#setup).
+
 ---
 
 ## Why this lab exists
@@ -156,6 +160,14 @@ select * from semantic_view(
 | `predict_term_deposit` | 45,211 | `fct_campaign_contacts` |
 | `fpr_records` | 751 | `fct_product_recommendations` |
 
+The files are in [`data/financial_services/`](data/financial_services/) as gzipped CSV, exported
+from the Fivetran Financial Services source as Fivetran lands it. `loan` follows the public
+Lending Club loan data (2007 to 2011); its borrower identity columns (`ssn`,
+`social_security_number`, `ssnumber`, `ssnumber1`, `dl`, `drivers_license`) and free-text
+fields (`emp_title`, `title`, `c_desc`, `c_url`) are shipped empty. `predict_term_deposit`
+is the UCI Bank Marketing dataset (Moro, Cortez and Rita, 2014, CC BY 4.0). The risk
+platform and recommendation tables are synthetic, and names and emails in them are fictional.
+
 ---
 
 ## Governance features
@@ -198,50 +210,76 @@ Three layers, all in git, described in [`context/README.md`](context/README.md):
 
 ### 0. Prerequisites
 
-- A Snowflake account and a Fivetran account (a trial of either works).
+- A Snowflake account where you can use `ACCOUNTADMIN` (a free trial works).
 - A dbt platform account. Cross-project `ref` (dbt Mesh) needs an Enterprise or
-  Enterprise+ plan; the Semantic Layer needs Starter or above. On a smaller plan you can
-  still build and explore `platform` on its own.
-- Your own copy of this repository (fork or template), connected to the dbt platform.
+  Enterprise+ plan, and the Semantic Layer needs Starter or above. On a smaller plan you
+  can still build and explore `platform` on its own.
+- Your own copy of this repository: click **Use this template** or fork it.
 
-### 1. Fivetran
+### 1. Load the source data (about a minute)
 
-Land the Fivetran Financial Services dataset (Google Cloud PostgreSQL connector) in a
-Snowflake database of your own, for example `<YOUR_DB>_LANDING`. Note the schema name;
-it ends in `_FINANCIAL_SERVICES`.
+Open a Snowsight worksheet, paste [`setup/snowflake_setup.sql`](setup/snowflake_setup.sql)
+and choose **Run all**. It creates `LARKSPUR_ROLE`, the `LARKSPUR_WH` warehouse, the
+`LARKSPUR_LANDING`, `LARKSPUR_DEV` and `LARKSPUR_PROD` databases, and loads the eight
+source tables into `LARKSPUR_LANDING.POSTGRES_FINANCIAL_SERVICES` straight from this public
+repository. The last query should show 198,723 rows in total.
+
+The tables match what the Fivetran Google Cloud PostgreSQL connector lands, including
+`_fivetran_synced` and `_fivetran_deleted`. **Using Fivetran instead?** Land the Financial
+Services source with your connector, set `source_schema` in `platform/dbt_project.yml` to
+the schema it created, and point `source_database` at its database if it is not your target
+database with `_DEV`/`_PROD` swapped for `_LANDING`.
 
 ### 2. dbt platform: four projects
 
-Create four dbt projects on the same repository, each with its **project subdirectory**
-set to `platform`, `finance`, `marketing` or `data_science`.
+1. Create a Snowflake connection: your account identifier, role `LARKSPUR_ROLE`,
+   warehouse `LARKSPUR_WH`. Development credentials use database `LARKSPUR_DEV`; the
+   production environment uses `LARKSPUR_PROD`.
+2. Create four projects on your copy of the repository, each with its **project
+   subdirectory** set to `platform`, `finance`, `marketing` or `data_science`.
+3. In `platform`, run `dbt deps` (installs datavault4dbt and dbt_semantic_view), then
+   `dbt build`. Sources resolve to `LARKSPUR_LANDING` automatically.
+4. Create a **production** environment and a job for `platform` (`dbt build`) and run it
+   once. Cross-project refs resolve against the producer's production environment, so the
+   consumers cannot build until it has succeeded.
+5. In each consumer, `dependencies.yml` already declares `platform`: run `dbt build`.
 
-1. In `platform/dbt_project.yml`, set `source_schema` to your Fivetran schema.
-   Sources are read from your `LANDING` database (derived from your target database by
-   swapping `_DEV`/`_PROD` for `_LANDING`); override with the `source_database` var.
-2. Build the platform in development: `dbt deps` (installs datavault4dbt and
-   dbt_semantic_view), then `dbt build` (seeds included).
-3. Create a **production** environment and job for `platform` and run it once.
-   Cross-project refs resolve against the producer's production environment, so the
-   consumers cannot build until this has succeeded.
-4. In each consumer, `dependencies.yml` already declares `platform`. Run `dbt build`.
+Prefer the command line? `platform` also builds with the dbt v2 CLI against the same
+databases; copy [`profiles.example.yml`](profiles.example.yml) to `~/.dbt/profiles.yml`.
+The consumers need the dbt platform to resolve cross-project refs.
 
 ### 3. Semantic Layer
 
 Configure the Semantic Layer on the production environment of `platform`, and of `finance`
-and `marketing` for their own metrics. The time spine is `dim_date`.
+and `marketing` for their own metrics. The time spine is `dim_date`. The Snowflake semantic
+views in `LARKSPUR_PROD.SEMANTIC` are built by the `platform` job and need no extra setup.
 
 ### 4. Fivetran Context Layer (optional)
+
+Only if your Snowflake account has the Fivetran Context Layer (`AGENTS.*` tables):
 
 ```bash
 python3 context_layer/publish_context_layer.py \
     --agents-schema <DB>.AGENTS \
-    --gold-database <your PROD database> \
-    --raw-schema <your LANDING database>.<your FINANCIAL_SERVICES schema>
+    --gold-database LARKSPUR_PROD \
+    --raw-schema LARKSPUR_LANDING.POSTGRES_FINANCIAL_SERVICES
 ```
 
 Review `context_layer/generated/load_context_layer.sql`, then run it with a role that
 can write to `AGENTS`. It only touches `PROJECT = 'finserv_mesh_lab'` rows and this
 project's section of the routing note.
+
+### Clean up
+
+```sql
+use role accountadmin;
+drop database if exists larkspur_dev;
+drop database if exists larkspur_prod;
+drop database if exists larkspur_landing;
+drop warehouse if exists larkspur_wh;
+drop integration if exists larkspur_github;
+drop role if exists larkspur_role;
+```
 
 ---
 
@@ -275,4 +313,6 @@ marketing/      consumer: campaign and recommendation marts
 data_science/   consumer: leakage-guarded feature sets
 context/        agent instructions, caveats, glossary, sample Q&A, routing template
 context_layer/  publish_context_layer.py (Fivetran Context Layer loader)
+data/           the 8 source tables (gzipped CSV, Fivetran landing shape)
+setup/          snowflake_setup.sql: role, warehouse, databases and data load
 ```

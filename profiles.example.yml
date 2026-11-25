@@ -1,0 +1,25 @@
+# Copy to ~/.dbt/profiles.yml to build the platform project with the dbt v2 CLI.
+# Run setup/snowflake_setup.sql first. Replace the account identifier and user.
+default:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: <orgname-accountname>
+      user: <your Snowflake user>
+      authenticator: externalbrowser
+      role: LARKSPUR_ROLE
+      warehouse: LARKSPUR_WH
+      database: LARKSPUR_DEV
+      schema: dbt_dev
+      threads: 8
+    prod:
+      type: snowflake
+      account: <orgname-accountname>
+      user: <your Snowflake user>
+      authenticator: externalbrowser
+      role: LARKSPUR_ROLE
+      warehouse: LARKSPUR_WH
+      database: LARKSPUR_PROD
+      schema: dbt_prod
+      threads: 8
